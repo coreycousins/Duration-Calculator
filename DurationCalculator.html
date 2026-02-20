@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duration">
+<title>Duration</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+
+body {
+background: #111113;
+color: #fff;
+font-family: ‘DM Sans’, -apple-system, sans-serif;
+min-height: 100dvh;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 44px 0 32px;
+}
+
+.title {
+font-size: 17px;
+font-weight: 600;
+color: #fff;
+margin-bottom: 20px;
+letter-spacing: -0.01em;
+}
+
+/* Duration readout — now at TOP */
+.readout {
+text-align: center;
+margin-bottom: 20px;
+}
+
+.readout-main {
+font-size: 44px;
+font-weight: 300;
+letter-spacing: -0.03em;
+line-height: 1;
+}
+
+.readout-sub {
+font-size: 13px;
+color: rgba(255,255,255,0.38);
+margin-top: 4px;
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.04em;
+}
+
+.midnight {
+font-size: 12px;
+color: #ff9f0a;
+margin-top: 5px;
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.05em;
+opacity: 0;
+transition: opacity 0.25s;
+}
+.midnight.show { opacity: 1; }
+
+/* Dial */
+.dial-wrap {
+width: 310px;
+height: 310px;
+position: relative;
+touch-action: none;
+}
+
+#dial {
+width: 100%;
+height: 100%;
+overflow: visible;
+touch-action: none;
+}
+
+/* Time labels BELOW the wheel */
+.labels-row {
+display: flex;
+justify-content: space-evenly;
+width: 100%;
+max-width: 360px;
+margin-top: 20px;
+padding: 0 20px;
+}
+
+.lbl {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 3px;
+}
+
+.lbl-name {
+font-size: 11px;
+font-weight: 600;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+}
+
+.lbl-name.s { color: #5e9bf5; }
+.lbl-name.e { color: #ff9f0a; }
+
+.lbl-time {
+font-size: 28px;
+font-weight: 300;
+letter-spacing: -0.02em;
+color: #fff;
+}
+
+.hint {
+margin-top: 18px;
+font-size: 12px;
+color: rgba(255,255,255,0.18);
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.04em;
+text-align: center;
+padding: 0 28px;
+line-height: 1.6;
+}
+</style>
+
+</head>
+<body>
+
+<div class="title">Duration</div>
+
+<!-- Times ABOVE the wheel -->
+
+<div class="labels-row" style="margin-bottom:20px;margin-top:0;">
+  <div class="lbl">
+    <div class="lbl-name s">▶ Start</div>
+    <div class="lbl-time" id="lblStart2">9:00 AM</div>
+  </div>
+  <div class="lbl">
+    <div class="lbl-name e">■ End</div>
+    <div class="lbl-time" id="lblEnd2">10:30 AM</div>
+  </div>
+</div>
+
+<div class="dial-wrap">
+<svg id="dial" viewBox="0 0 310 310" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Background ring -->
+
+  <circle cx="155" cy="155" r="120" fill="none" stroke="#252528" stroke-width="30"/>
+
+  <!-- Arc body — wide hit area for "slide whole arc" dragging -->
+
+  <path id="arcHit" fill="none" stroke="transparent" stroke-width="44" stroke-linecap="butt" style="cursor:grab"/>
+
+  <!-- Visible arc -->
+
+  <path id="arcFill" fill="none" stroke="#ff9f0a" stroke-width="30" stroke-linecap="butt" pointer-events="none"/>
+
+  <!-- Tick marks over arc -->
+
+<g id="ticks"></g>
+
+  <!-- Hour labels -->
+
+<g id="hrLabels" text-anchor="middle" dominant-baseline="central"
+font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)"></g>
+
+  <!-- Start handle (blue) -->
+
+  <circle id="hs" r="17" fill="#1c1c1e" stroke="#5e9bf5" stroke-width="3" style="cursor:grab"/>
+  <circle id="hsDot" r="5" fill="#5e9bf5" pointer-events="none"/>
+
+  <!-- End handle (orange) -->
+
+  <circle id="he" r="17" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="3" style="cursor:grab"/>
+  <circle id="heDot" r="5" fill="#ff9f0a" pointer-events="none"/>
+
+</svg>
+</div>
+
+<!-- Duration BELOW the wheel -->
+
+<div class="readout" style="margin-top:20px;">
+  <div class="readout-main" id="durMain">1 hr 30 min</div>
+  <div class="readout-sub" id="durSub">90 minutes total</div>
+  <div class="midnight" id="midnight">↺ crosses midnight</div>
+</div>
+
+<div class="hint">Drag handles to change start/end · drag the arc to shift both</div>
+
+<script>
+const CX = 155, CY = 155, R = 120;
+const TAU = Math.PI * 2;
+const SNAP = 15; // minutes
+
+// State in minutes (0–1439)
+let startMins = 9 * 60;   // 9:00 AM
+let endMins   = 10 * 60 + 30; // 10:30 AM
+
+// Drag state
+// mode: null | 'start' | 'end' | 'arc'
+let dragMode = null;
+let dragStartAngle = 0;   // angle at pointer-down
+let dragStartSM = 0;      // startMins at pointer-down
+let dragStartEM = 0;      // endMins at pointer-down
+
+// ---- Math helpers ----
+function minsToAngle(m) {
+  return (((m % 1440) + 1440) % 1440 / 1440) * TAU - Math.PI / 2;
+}
+
+function angleToMins(a) {
+  let norm = ((a + Math.PI / 2) % TAU + TAU) % TAU;
+  return (norm / TAU) * 1440;
+}
+
+function snapTo(m) {
+  return Math.round(m / SNAP) * SNAP % 1440;
+}
+
+function polar(a, r) {
+  r = (r === undefined) ? R : r;
+  return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
+}
+
+function angleDiff(a, b) {
+  // Signed shortest rotation from b to a (clockwise positive)
+  let d = ((a - b) % TAU + TAU) % TAU;
+  if (d > Math.PI) d -= TAU;
+  return d;
+}
+
+// Duration in minutes going clockwise from start to end (always 1..1439)
+function getDuration() {
+  let d = endMins - startMins;
+  if (d <= 0) d += 1440;
+  return d;
+}
+
+// ---- Format helpers ----
+function formatTime(m) {
+  m = ((m % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60);
+  const min = m % 60;
+  const ampm = h24 < 12 ? 'AM' : 'PM';
+  const h = h24 % 12 || 12;
+  return `${h}:${String(min).padStart(2,'0')} ${ampm}`;
+}
+
+function formatDur(m) {
+  m = ((m % 1440) + 1440) % 1440;
+  const h = Math.floor(m / 60), mm = m % 60;
+  if (!h) return `${mm} min`;
+  if (!mm) return `${h} hr`;
+  return `${h} hr ${mm} min`;
+}
+
+// ---- Build static ticks & labels ----
+function buildTicks() {
+  const g = document.getElementById('ticks');
+  for (let i = 0; i < 96; i++) {
+    const a = (i / 96) * TAU - Math.PI / 2;
+    const major = i % 4 === 0;
+    const inner = R - 15 + (major ? 0 : 5);
+    const outer = R + 15 - (major ? 0 : 5);
+    const p1 = polar(a, inner), p2 = polar(a, outer);
+    const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    l.setAttribute('x1', p1.x); l.setAttribute('y1', p1.y);
+    l.setAttribute('x2', p2.x); l.setAttribute('y2', p2.y);
+    l.setAttribute('stroke', major ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)');
+    l.setAttribute('stroke-width', major ? 1.5 : 1);
+    g.appendChild(l);
+  }
+}
+
+function buildLabels() {
+  const g = document.getElementById('hrLabels');
+  [
+    ['12AM', -Math.PI / 2],
+    ['6AM',  0],
+    ['12PM', Math.PI / 2],
+    ['6PM',  Math.PI],
+  ].forEach(([txt, a]) => {
+    const p = polar(a, R - 42);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y);
+    t.textContent = txt;
+    g.appendChild(t);
+  });
+}
+
+// ---- Render ----
+function render() {
+  const sm = startMins, em = endMins;
+  const dur = getDuration();
+  const crossesMidnight = em < sm || (em === sm);
+
+  document.getElementById('lblStart2').textContent = formatTime(sm);
+  document.getElementById('lblEnd2').textContent   = formatTime(em);
+  document.getElementById('durMain').textContent  = formatDur(dur);
+  document.getElementById('durSub').textContent   = `${dur} minute${dur !== 1 ? 's' : ''} total`;
+  document.getElementById('midnight').classList.toggle('show', crossesMidnight);
+
+  const aS = minsToAngle(sm);
+  const aE = minsToAngle(em);
+  const p1 = polar(aS), p2 = polar(aE);
+
+  const spanMins = getDuration();
+  const largeArc = spanMins > 720 ? 1 : 0;
+
+  const arcD = `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
+  document.getElementById('arcFill').setAttribute('d', arcD);
+  document.getElementById('arcHit').setAttribute('d', arcD);
+
+  // Handles
+  [['hs','hsDot', aS],['he','heDot', aE]].forEach(([id,dotId,a]) => {
+    const p = polar(a);
+    document.getElementById(id).setAttribute('cx', p.x);
+    document.getElementById(id).setAttribute('cy', p.y);
+    document.getElementById(dotId).setAttribute('cx', p.x);
+    document.getElementById(dotId).setAttribute('cy', p.y);
+  });
+}
+
+// ---- Hit testing ----
+const svg = document.getElementById('dial');
+
+function getEventAngle(e) {
+  const rect = svg.getBoundingClientRect();
+  const scale = 310 / rect.width;
+  const src = e.touches ? e.touches[0] : e;
+  const x = (src.clientX - rect.left) * scale - CX;
+  const y = (src.clientY - rect.top) * scale - CY;
+  return Math.atan2(y, x);
+}
+
+function getEventRadius(e) {
+  const rect = svg.getBoundingClientRect();
+  const scale = 310 / rect.width;
+  const src = e.touches ? e.touches[0] : e;
+  const x = (src.clientX - rect.left) * scale - CX;
+  const y = (src.clientY - rect.top) * scale - CY;
+  return Math.sqrt(x * x + y * y);
+}
+
+function isOnArc(angle, radius) {
+  // Check radius is within ring band
+  if (radius < R - 22 || radius > R + 22) return false;
+
+  // Check angle is within the arc (clockwise from start to end)
+  const normA = ((angle + Math.PI / 2) % TAU + TAU) % TAU;
+  const normS = ((minsToAngle(startMins) + Math.PI / 2) % TAU + TAU) % TAU;
+  const normE = ((minsToAngle(endMins) + Math.PI / 2) % TAU + TAU) % TAU;
+
+  let span = normE - normS;
+  if (span <= 0) span += TAU;
+
+  let fromStart = normA - normS;
+  if (fromStart < 0) fromStart += TAU;
+
+  return fromStart <= span;
+}
+
+function isOnHandle(angle, handleAngle) {
+  return Math.abs(angleDiff(angle, handleAngle)) < 0.18; // ~10 deg
+}
+
+function determineTarget(e) {
+  const a = getEventAngle(e);
+  const r = getEventRadius(e);
+
+  const aS = minsToAngle(startMins);
+  const aE = minsToAngle(endMins);
+
+  // Handle zones take priority (within ~22px of handle center on ring)
+  if (r > R - 26 && r < R + 26) {
+    const dS = Math.abs(angleDiff(a, aS));
+    const dE = Math.abs(angleDiff(a, aE));
+    const handleThresh = 0.22; // radians
+    if (dS < handleThresh && dS <= dE) return 'start';
+    if (dE < handleThresh && dE < dS) return 'end';
+  }
+
+  // Arc body
+  if (isOnArc(a, r)) return 'arc';
+
+  return null;
+}
+
+// ---- Drag handlers ----
+function onDown(e) {
+  e.preventDefault();
+  const target = determineTarget(e);
+  if (!target) return;
+
+  dragMode = target;
+  dragStartAngle = getEventAngle(e);
+  dragStartSM = startMins;
+  dragStartEM = endMins;
+
+  if (dragMode === 'arc') {
+    document.getElementById('arcHit').style.cursor = 'grabbing';
+  } else {
+    const hid = dragMode === 'start' ? 'hs' : 'he';
+    document.getElementById(hid).style.cursor = 'grabbing';
+  }
+}
+
+function onMove(e) {
+  if (!dragMode) return;
+  e.preventDefault();
+
+  const a = getEventAngle(e);
+
+  if (dragMode === 'start') {
+    startMins = snapTo(angleToMins(a));
+  } else if (dragMode === 'end') {
+    endMins = snapTo(angleToMins(a));
+  } else if (dragMode === 'arc') {
+    // Rotate both handles by delta angle from drag start
+    const delta = angleDiff(a, dragStartAngle);
+    const deltaMins = (delta / TAU) * 1440;
+    startMins = snapTo(((dragStartSM + deltaMins) % 1440 + 1440) % 1440);
+    endMins   = snapTo(((dragStartEM + deltaMins) % 1440 + 1440) % 1440);
+  }
+
+  render();
+}
+
+function onUp() {
+  dragMode = null;
+  document.getElementById('arcHit').style.cursor = 'grab';
+  document.getElementById('hs').style.cursor = 'grab';
+  document.getElementById('he').style.cursor = 'grab';
+}
+
+svg.addEventListener('mousedown', onDown);
+svg.addEventListener('touchstart', onDown, { passive: false });
+window.addEventListener('mousemove', onMove);
+window.addEventListener('touchmove', onMove, { passive: false });
+window.addEventListener('mouseup', onUp);
+window.addEventListener('touchend', onUp);
+
+// ---- Init ----
+buildTicks();
+buildLabels();
+render();
+</script>
+
+</body>
+</html>
