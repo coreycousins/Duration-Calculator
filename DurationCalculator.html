@@ -147,7 +147,15 @@ line-height: 1.6;
 
   <!-- Background ring -->
 
-  <circle cx="155" cy="155" r="120" fill="none" stroke="#252528" stroke-width="30"/>
+  <circle cx="155" cy="155" r="120" fill="none" stroke="#2d2d31" stroke-width="30"/>
+
+  <!-- Night shade arc (sunrise–sunset shading) -->
+
+  <path id="nightArc" fill="none" stroke="#0e0e11" stroke-width="30" stroke-linecap="butt" pointer-events="none" style="display:none"/>
+
+  <!-- Sunrise / sunset markers -->
+
+  <g id="sunMarkers"></g>
 
   <!-- Arc body — wide hit area for "slide whole arc" dragging -->
 
@@ -176,6 +184,12 @@ font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)">
   <circle id="he" r="17" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="3" style="cursor:grab"/>
   <circle id="heDot" r="5" fill="#ff9f0a" pointer-events="none"/>
 
+  <!-- Arc midpoint grab stick -->
+
+  <line id="stickLine" stroke="#ff9f0a" stroke-width="1.5" stroke-opacity="0.45" stroke-linecap="round" pointer-events="none"/>
+  <circle id="stickHandle" r="11" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="2.5" style="cursor:grab"/>
+  <circle id="stickDot" r="3.5" fill="#ff9f0a" pointer-events="none"/>
+
 </svg>
 </div>
 
@@ -189,6 +203,8 @@ font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)">
 
 <div class="hint">Drag handles to change start/end · drag the arc to shift both</div>
 
+<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v1.0</div>
+
 <script>
 const CX = 155, CY = 155, R = 120;
 const TAU = Math.PI * 2;
@@ -197,6 +213,10 @@ const SNAP = 15; // minutes
 // State in minutes (0–1439)
 let startMins = 9 * 60;   // 9:00 AM
 let endMins   = 10 * 60 + 30; // 10:30 AM
+
+// Sun times (null until geolocation resolves)
+let sunriseMins = null;
+let sunsetMins  = null;
 
 // Drag state
 // mode: null | 'start' | 'end' | 'arc'
@@ -313,6 +333,22 @@ function render() {
   document.getElementById('arcFill').setAttribute('d', arcD);
   document.getElementById('arcHit').setAttribute('d', arcD);
 
+  // Night shade arc
+  const nightEl = document.getElementById('nightArc');
+  if (sunriseMins !== null && sunsetMins !== null) {
+    const aRise = minsToAngle(sunriseMins);
+    const aSet  = minsToAngle(sunsetMins);
+    const pRise = polar(aRise);
+    const pSet  = polar(aSet);
+    // Night runs clockwise from sunset → sunrise (through midnight)
+    const nightSpan = ((sunriseMins - sunsetMins) + 1440) % 1440;
+    const nightLarge = nightSpan > 720 ? 1 : 0;
+    nightEl.setAttribute('d', `M ${pSet.x} ${pSet.y} A ${R} ${R} 0 ${nightLarge} 1 ${pRise.x} ${pRise.y}`);
+    nightEl.style.display = '';
+  } else {
+    nightEl.style.display = 'none';
+  }
+
   // Handles
   [['hs','hsDot', aS],['he','heDot', aE]].forEach(([id,dotId,a]) => {
     const p = polar(a);
@@ -321,6 +357,20 @@ function render() {
     document.getElementById(dotId).setAttribute('cx', p.x);
     document.getElementById(dotId).setAttribute('cy', p.y);
   });
+
+  // Arc midpoint grab stick
+  const midMins = ((sm + spanMins / 2) % 1440 + 1440) % 1440;
+  const aMid = minsToAngle(midMins);
+  const pStickInner = polar(aMid, R + 16);
+  const pStickOuter = polar(aMid, R + 36);
+  document.getElementById('stickLine').setAttribute('x1', pStickInner.x);
+  document.getElementById('stickLine').setAttribute('y1', pStickInner.y);
+  document.getElementById('stickLine').setAttribute('x2', pStickOuter.x);
+  document.getElementById('stickLine').setAttribute('y2', pStickOuter.y);
+  document.getElementById('stickHandle').setAttribute('cx', pStickOuter.x);
+  document.getElementById('stickHandle').setAttribute('cy', pStickOuter.y);
+  document.getElementById('stickDot').setAttribute('cx', pStickOuter.x);
+  document.getElementById('stickDot').setAttribute('cy', pStickOuter.y);
 }
 
 // ---- Hit testing ----
@@ -342,6 +392,13 @@ function getEventRadius(e) {
   const x = (src.clientX - rect.left) * scale - CX;
   const y = (src.clientY - rect.top) * scale - CY;
   return Math.sqrt(x * x + y * y);
+}
+
+function getEventSVGXY(e) {
+  const rect = svg.getBoundingClientRect();
+  const scale = 310 / rect.width;
+  const src = e.touches ? e.touches[0] : e;
+  return [(src.clientX - rect.left) * scale, (src.clientY - rect.top) * scale];
 }
 
 function isOnArc(angle, radius) {
@@ -369,6 +426,13 @@ function isOnHandle(angle, handleAngle) {
 function determineTarget(e) {
   const a = getEventAngle(e);
   const r = getEventRadius(e);
+  const [ex, ey] = getEventSVGXY(e);
+
+  // Stick handle at arc midpoint (always grabbable)
+  const midMins = ((startMins + getDuration() / 2) % 1440 + 1440) % 1440;
+  const pStick = polar(minsToAngle(midMins), R + 36);
+  const dStick = Math.sqrt((ex - pStick.x) ** 2 + (ey - pStick.y) ** 2);
+  if (dStick < 22) return 'arc';
 
   const aS = minsToAngle(startMins);
   const aE = minsToAngle(endMins);
@@ -401,6 +465,7 @@ function onDown(e) {
 
   if (dragMode === 'arc') {
     document.getElementById('arcHit').style.cursor = 'grabbing';
+    document.getElementById('stickHandle').style.cursor = 'grabbing';
   } else {
     const hid = dragMode === 'start' ? 'hs' : 'he';
     document.getElementById(hid).style.cursor = 'grabbing';
@@ -433,6 +498,7 @@ function onUp() {
   document.getElementById('arcHit').style.cursor = 'grab';
   document.getElementById('hs').style.cursor = 'grab';
   document.getElementById('he').style.cursor = 'grab';
+  document.getElementById('stickHandle').style.cursor = 'grab';
 }
 
 svg.addEventListener('mousedown', onDown);
@@ -442,10 +508,65 @@ window.addEventListener('touchmove', onMove, { passive: false });
 window.addEventListener('mouseup', onUp);
 window.addEventListener('touchend', onUp);
 
+// ---- Sun markers ----
+function renderSunMarkers() {
+  const g = document.getElementById('sunMarkers');
+  g.innerHTML = '';
+  if (sunriseMins === null || sunsetMins === null) return;
+
+  [sunriseMins, sunsetMins].forEach(mins => {
+    const a = minsToAngle(mins);
+    const p1  = polar(a, R + 16);
+    const p2  = polar(a, R + 27);
+    const pTxt = polar(a, R + 52);
+
+    const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    tick.setAttribute('x1', p1.x); tick.setAttribute('y1', p1.y);
+    tick.setAttribute('x2', p2.x); tick.setAttribute('y2', p2.y);
+    tick.setAttribute('stroke', 'rgba(255,210,80,0.55)');
+    tick.setAttribute('stroke-width', '1.5');
+    tick.setAttribute('stroke-linecap', 'round');
+    g.appendChild(tick);
+
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    lbl.setAttribute('x', pTxt.x); lbl.setAttribute('y', pTxt.y);
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('dominant-baseline', 'central');
+    lbl.setAttribute('font-family', 'DM Mono, monospace');
+    lbl.setAttribute('font-size', '9');
+    lbl.setAttribute('fill', 'rgba(255,210,80,0.45)');
+    lbl.textContent = formatTime(mins);
+    g.appendChild(lbl);
+  });
+}
+
+// ---- Sun times ----
+async function loadSunTimes() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+    try {
+      const res = await fetch(
+        `https://api.sunrise-sunset.org/json?lat=${coords.latitude}&lng=${coords.longitude}&formatted=0`
+      );
+      const data = await res.json();
+      if (data.status !== 'OK') return;
+      const toLocalMins = iso => {
+        const d = new Date(iso);
+        return d.getHours() * 60 + d.getMinutes();
+      };
+      sunriseMins = toLocalMins(data.results.sunrise);
+      sunsetMins  = toLocalMins(data.results.sunset);
+      render();
+      renderSunMarkers();
+    } catch (_) {}
+  }, () => {});
+}
+
 // ---- Init ----
 buildTicks();
 buildLabels();
 render();
+loadSunTimes();
 </script>
 
 </body>
