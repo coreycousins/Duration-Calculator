@@ -122,6 +122,26 @@ text-align: center;
 padding: 0 28px;
 line-height: 1.6;
 }
+
+.daylight-row {
+text-align: center;
+margin-top: 14px;
+}
+
+.daylight-time {
+font-size: 13px;
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.04em;
+color: rgba(255,210,80,0.75);
+}
+
+.daylight-note {
+font-size: 11px;
+color: rgba(255,255,255,0.18);
+font-family: ‘DM Mono’, monospace;
+letter-spacing: 0.04em;
+margin-top: 4px;
+}
 </style>
 
 </head>
@@ -201,9 +221,14 @@ font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)">
   <div class="midnight" id="midnight">↺ crosses midnight</div>
 </div>
 
+<div class="daylight-row">
+  <div class="daylight-time" id="daylightTime"></div>
+  <div class="daylight-note" id="daylightNote">daylight time requires sharing your location</div>
+</div>
+
 <div class="hint">Drag handles to change start/end · drag the arc to shift both</div>
 
-<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v1.0</div>
+<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v1.1</div>
 
 <script>
 const CX = 155, CY = 155, R = 120;
@@ -540,6 +565,33 @@ function renderSunMarkers() {
   });
 }
 
+// ---- Daylight info ----
+function updateDaylightInfo() {
+  const timeEl = document.getElementById('daylightTime');
+  const noteEl = document.getElementById('daylightNote');
+
+  if (sunriseMins === null || sunsetMins === null) {
+    timeEl.textContent = '';
+    noteEl.style.display = '';
+    return;
+  }
+
+  noteEl.style.display = 'none';
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const isDaytime = nowMins >= sunriseMins && nowMins < sunsetMins;
+
+  if (isDaytime) {
+    const remaining = sunsetMins - nowMins;
+    timeEl.textContent = `${formatDur(remaining)} of daylight left`;
+  } else {
+    let toSunrise = sunriseMins - nowMins;
+    if (toSunrise <= 0) toSunrise += 1440;
+    timeEl.textContent = `${formatDur(toSunrise)} until sunrise`;
+  }
+}
+
 // ---- Sun times ----
 async function loadSunTimes() {
   if (!navigator.geolocation) return;
@@ -558,6 +610,7 @@ async function loadSunTimes() {
       sunsetMins  = toLocalMins(data.results.sunset);
       render();
       renderSunMarkers();
+      updateDaylightInfo();
     } catch (_) {}
   }, () => {});
 }
@@ -567,6 +620,7 @@ buildTicks();
 buildLabels();
 render();
 loadSunTimes();
+setInterval(updateDaylightInfo, 60000);
 </script>
 
 </body>

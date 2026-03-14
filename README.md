@@ -14,6 +14,8 @@ A single-file, mobile-friendly duration calculator built around a 24-hour clock 
 
 **Sunrise / sunset shading** — On load the app requests your location and fetches today's sunrise and sunset times. Nighttime hours are shaded darker on the ring, and small time labels mark the day/night boundaries.
 
+**Daylight remaining** — Below the duration readout, the app shows how much daylight is left today. If it's already night, it shows the time until sunrise instead. A note prompts for location sharing if access hasn't been granted yet.
+
 ## Running
 
 Open `DurationCalculator.html` directly in any modern browser — no build step or server required. Location access is needed for the sunrise/sunset feature; the app works without it.
