@@ -123,6 +123,99 @@ padding: 0 28px;
 line-height: 1.6;
 }
 
+.slot-toolbar {
+max-width: 360px;
+margin: 16px auto 8px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 12px;
+padding: 0 20px;
+}
+
+.slot-button {
+background: rgba(255,255,255,0.04);
+border: 1px solid rgba(255,255,255,0.08);
+color: #fff;
+padding: 9px 14px;
+font-size: 12px;
+letter-spacing: 0.12em;
+text-transform: uppercase;
+border-radius: 999px;
+cursor: pointer;
+}
+
+.slot-button:hover {
+background: rgba(255,255,255,0.08);
+}
+
+.slot-summary {
+font-size: 12px;
+color: rgba(255,255,255,0.6);
+font-family: ‘DM Mono’, monospace;
+}
+
+.slot-list {
+max-width: 360px;
+margin: 0 auto;
+display: flex;
+flex-direction: column;
+gap: 8px;
+padding: 0 20px;
+}
+
+.slot-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+background: rgba(255,255,255,0.03);
+border: 1px solid rgba(255,255,255,0.08);
+border-radius: 14px;
+padding: 12px 14px;
+cursor: pointer;
+}
+
+.slot-row.selected {
+border-color: rgba(94,155,245,0.6);
+background: rgba(94,155,245,0.1);
+}
+
+.slot-row-label {
+display: flex;
+flex-direction: column;
+gap: 4px;
+}
+
+.slot-row-title {
+font-size: 13px;
+font-weight: 500;
+}
+
+.slot-row-time {
+font-size: 12px;
+color: rgba(255,255,255,0.65);
+font-family: ‘DM Mono’, monospace;
+}
+
+.slot-row-actions {
+display: flex;
+gap: 8px;
+}
+
+.slot-action {
+background: rgba(255,255,255,0.04);
+border: 1px solid rgba(255,255,255,0.08);
+color: rgba(255,255,255,0.75);
+padding: 6px 10px;
+border-radius: 10px;
+font-size: 11px;
+cursor: pointer;
+}
+
+.slot-action:hover {
+border-color: rgba(255,255,255,0.18);
+}
+
 .daylight-row {
 text-align: center;
 margin-top: 14px;
@@ -188,6 +281,7 @@ margin-top: 4px;
   <!-- Tick marks over arc -->
 
 <g id="ticks"></g>
+  <g id="slotArcs"></g>
 
   <!-- Hour labels -->
 
@@ -221,6 +315,12 @@ font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)">
   <div class="midnight" id="midnight">↺ crosses midnight</div>
 </div>
 
+<div class="slot-toolbar">
+  <button class="slot-button" id="addSlotBtn" onclick="addSlot()">+ Add slot</button>
+  <div class="slot-summary" id="slotSummary">1 slot · 1 hr 30 min total</div>
+</div>
+<div id="slotList" class="slot-list"></div>
+
 <div class="daylight-row">
   <div class="daylight-time" id="daylightTime"></div>
   <div class="daylight-note" id="daylightNote">daylight time requires sharing your location</div>
@@ -235,9 +335,11 @@ const CX = 155, CY = 155, R = 120;
 const TAU = Math.PI * 2;
 const SNAP = 15; // minutes
 
-// State in minutes (0–1439)
-let startMins = 9 * 60;   // 9:00 AM
-let endMins   = 10 * 60 + 30; // 10:30 AM
+const STORAGE_KEY = 'durationSlots';
+const DEFAULT_SLOT_LENGTH = 120;
+
+let slots = loadSlots();
+let selectedSlotId = slots.length ? slots[0].id : null;
 
 // Sun times (null until geolocation resolves)
 let sunriseMins = null;
@@ -247,8 +349,8 @@ let sunsetMins  = null;
 // mode: null | 'start' | 'end' | 'arc'
 let dragMode = null;
 let dragStartAngle = 0;   // angle at pointer-down
-let dragStartSM = 0;      // startMins at pointer-down
-let dragStartEM = 0;      // endMins at pointer-down
+let dragStartSM = 0;      // selected slot start at pointer-down
+let dragStartEM = 0;      // selected slot end at pointer-down
 
 // ---- Math helpers ----
 function minsToAngle(m) {
@@ -277,8 +379,9 @@ function angleDiff(a, b) {
 }
 
 // Duration in minutes going clockwise from start to end (always 1..1439)
-function getDuration() {
-  let d = endMins - startMins;
+function getDuration(slot) {
+  if (!slot) return 0;
+  let d = slot.endMins - slot.startMins;
   if (d <= 0) d += 1440;
   return d;
 }
@@ -299,6 +402,133 @@ function formatDur(m) {
   if (!h) return `${mm} min`;
   if (!mm) return `${h} hr`;
   return `${h} hr ${mm} min`;
+}
+
+function loadSlots() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(parsed) && parsed.length) return parsed;
+  } catch (_) {}
+  return [{ id: Date.now(), label: 'Slot 1', startMins: 9 * 60, endMins: 10 * 60 + 30 }];
+}
+
+function saveSlots() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(slots));
+}
+
+function getSelectedSlot() {
+  let slot = slots.find(s => s.id === selectedSlotId);
+  if (!slot) {
+    slot = slots[0] || null;
+    selectedSlotId = slot ? slot.id : null;
+  }
+  return slot;
+}
+
+function getDurationForSlot(slot) {
+  let d = slot.endMins - slot.startMins;
+  if (d <= 0) d += 1440;
+  return d;
+}
+
+function findNextSlotStart() {
+  if (!slots.length) return 8 * 60;
+  const latestEnd = Math.max(...slots.map(s => s.endMins));
+  const candidate = snapTo(latestEnd + 30);
+  if (candidate + DEFAULT_SLOT_LENGTH <= 1439) return candidate;
+  return 8 * 60;
+}
+
+function addSlot() {
+  const nextStart = findNextSlotStart();
+  const start = nextStart;
+  const end = snapTo((nextStart + DEFAULT_SLOT_LENGTH) % 1440);
+  const nextNum = slots.length + 1;
+  const slot = { id: Date.now(), label: `Slot ${nextNum}`, startMins: start, endMins: end };
+  slots.push(slot);
+  selectedSlotId = slot.id;
+  saveSlots();
+  updateSlotList();
+  render();
+}
+
+function selectSlot(id) {
+  selectedSlotId = id;
+  updateSlotList();
+  render();
+}
+
+function deleteSlot(id, event) {
+  event.stopPropagation();
+  if (slots.length <= 1) return;
+  slots = slots.filter(s => s.id !== id);
+  if (selectedSlotId === id) selectedSlotId = slots[0].id;
+  saveSlots();
+  updateSlotList();
+  render();
+}
+
+function updateSlotList() {
+  const container = document.getElementById('slotList');
+  const summary = document.getElementById('slotSummary');
+  container.innerHTML = '';
+  slots.forEach(slot => {
+    const row = document.createElement('div');
+    row.className = `slot-row${slot.id === selectedSlotId ? ' selected' : ''}`;
+    row.onclick = () => selectSlot(slot.id);
+
+    const label = document.createElement('div');
+    label.className = 'slot-row-label';
+    label.innerHTML = `<span class="slot-row-title">${slot.label}</span><span class="slot-row-time">${formatTime(slot.startMins)} – ${formatTime(slot.endMins)} · ${formatDur(getDurationForSlot(slot))}</span>`;
+
+    const actions = document.createElement('div');
+    actions.className = 'slot-row-actions';
+    const del = document.createElement('button');
+    del.className = 'slot-action';
+    del.textContent = 'Delete';
+    del.onclick = (e) => deleteSlot(slot.id, e);
+    actions.appendChild(del);
+
+    row.appendChild(label);
+    row.appendChild(actions);
+    container.appendChild(row);
+  });
+
+  const total = slots.reduce((sum, slot) => sum + getDurationForSlot(slot), 0);
+  summary.textContent = `${slots.length} slot${slots.length !== 1 ? 's' : ''} · ${formatDur(total)} total`;
+}
+
+function buildSlotPath(slot) {
+  const sm = slot.startMins;
+  const em = slot.endMins;
+  const aS = minsToAngle(sm);
+  const aE = minsToAngle(em);
+  const spanMins = getDurationForSlot(slot);
+  const largeArc = spanMins > 720 ? 1 : 0;
+  const p1 = polar(aS);
+  const p2 = polar(aE);
+  return `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
+}
+
+function drawSlotArcs() {
+  const g = document.getElementById('slotArcs');
+  g.innerHTML = '';
+  slots.forEach(slot => {
+    if (slot.id === selectedSlotId) return;
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', buildSlotPath(slot));
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+    path.setAttribute('stroke-width', '30');
+    path.setAttribute('stroke-linecap', 'butt');
+    path.setAttribute('cursor', 'pointer');
+    path.setAttribute('pointer-events', 'stroke');
+    path.onclick = () => selectSlot(slot.id);
+    path.onmouseover = () => path.setAttribute('stroke', 'rgba(255,255,255,0.24)');
+    path.onmouseout = () => path.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+    g.appendChild(path);
+  });
 }
 
 // ---- Build static ticks & labels ----
@@ -337,8 +567,12 @@ function buildLabels() {
 
 // ---- Render ----
 function render() {
-  const sm = startMins, em = endMins;
-  const dur = getDuration();
+  const slot = getSelectedSlot();
+  if (!slot) return;
+
+  const sm = slot.startMins;
+  const em = slot.endMins;
+  const dur = getDurationForSlot(slot);
   const crossesMidnight = em < sm || (em === sm);
 
   document.getElementById('lblStart2').textContent = formatTime(sm);
@@ -347,13 +581,13 @@ function render() {
   document.getElementById('durSub').textContent   = `${dur} minute${dur !== 1 ? 's' : ''} total`;
   document.getElementById('midnight').classList.toggle('show', crossesMidnight);
 
+  drawSlotArcs();
+
   const aS = minsToAngle(sm);
   const aE = minsToAngle(em);
   const p1 = polar(aS), p2 = polar(aE);
 
-  const spanMins = getDuration();
-  const largeArc = spanMins > 720 ? 1 : 0;
-
+  const largeArc = dur > 720 ? 1 : 0;
   const arcD = `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
   document.getElementById('arcFill').setAttribute('d', arcD);
   document.getElementById('arcHit').setAttribute('d', arcD);
@@ -365,7 +599,6 @@ function render() {
     const aSet  = minsToAngle(sunsetMins);
     const pRise = polar(aRise);
     const pSet  = polar(aSet);
-    // Night runs clockwise from sunset → sunrise (through midnight)
     const nightSpan = ((sunriseMins - sunsetMins) + 1440) % 1440;
     const nightLarge = nightSpan > 720 ? 1 : 0;
     nightEl.setAttribute('d', `M ${pSet.x} ${pSet.y} A ${R} ${R} 0 ${nightLarge} 1 ${pRise.x} ${pRise.y}`);
@@ -383,8 +616,7 @@ function render() {
     document.getElementById(dotId).setAttribute('cy', p.y);
   });
 
-  // Arc midpoint grab stick
-  const midMins = ((sm + spanMins / 2) % 1440 + 1440) % 1440;
+  const midMins = ((sm + dur / 2) % 1440 + 1440) % 1440;
   const aMid = minsToAngle(midMins);
   const pStickInner = polar(aMid, R + 16);
   const pStickOuter = polar(aMid, R + 36);
@@ -427,13 +659,14 @@ function getEventSVGXY(e) {
 }
 
 function isOnArc(angle, radius) {
+  const slot = getSelectedSlot();
+  if (!slot) return false;
   // Check radius is within ring band
   if (radius < R - 22 || radius > R + 22) return false;
 
-  // Check angle is within the arc (clockwise from start to end)
   const normA = ((angle + Math.PI / 2) % TAU + TAU) % TAU;
-  const normS = ((minsToAngle(startMins) + Math.PI / 2) % TAU + TAU) % TAU;
-  const normE = ((minsToAngle(endMins) + Math.PI / 2) % TAU + TAU) % TAU;
+  const normS = ((minsToAngle(slot.startMins) + Math.PI / 2) % TAU + TAU) % TAU;
+  const normE = ((minsToAngle(slot.endMins) + Math.PI / 2) % TAU + TAU) % TAU;
 
   let span = normE - normS;
   if (span <= 0) span += TAU;
@@ -449,29 +682,29 @@ function isOnHandle(angle, handleAngle) {
 }
 
 function determineTarget(e) {
+  const slot = getSelectedSlot();
+  if (!slot) return null;
   const a = getEventAngle(e);
   const r = getEventRadius(e);
   const [ex, ey] = getEventSVGXY(e);
 
-  // Stick handle at arc midpoint (always grabbable)
-  const midMins = ((startMins + getDuration() / 2) % 1440 + 1440) % 1440;
+  const slotDur = getDurationForSlot(slot);
+  const midMins = ((slot.startMins + slotDur / 2) % 1440 + 1440) % 1440;
   const pStick = polar(minsToAngle(midMins), R + 36);
   const dStick = Math.sqrt((ex - pStick.x) ** 2 + (ey - pStick.y) ** 2);
   if (dStick < 22) return 'arc';
 
-  const aS = minsToAngle(startMins);
-  const aE = minsToAngle(endMins);
+  const aS = minsToAngle(slot.startMins);
+  const aE = minsToAngle(slot.endMins);
 
-  // Handle zones take priority (within ~22px of handle center on ring)
   if (r > R - 26 && r < R + 26) {
     const dS = Math.abs(angleDiff(a, aS));
     const dE = Math.abs(angleDiff(a, aE));
-    const handleThresh = 0.22; // radians
+    const handleThresh = 0.22;
     if (dS < handleThresh && dS <= dE) return 'start';
     if (dE < handleThresh && dE < dS) return 'end';
   }
 
-  // Arc body
   if (isOnArc(a, r)) return 'arc';
 
   return null;
@@ -483,10 +716,13 @@ function onDown(e) {
   const target = determineTarget(e);
   if (!target) return;
 
+  const slot = getSelectedSlot();
+  if (!slot) return;
+
   dragMode = target;
   dragStartAngle = getEventAngle(e);
-  dragStartSM = startMins;
-  dragStartEM = endMins;
+  dragStartSM = slot.startMins;
+  dragStartEM = slot.endMins;
 
   if (dragMode === 'arc') {
     document.getElementById('arcHit').style.cursor = 'grabbing';
@@ -501,21 +737,25 @@ function onMove(e) {
   if (!dragMode) return;
   e.preventDefault();
 
+  const slot = getSelectedSlot();
+  if (!slot) return;
+
   const a = getEventAngle(e);
 
   if (dragMode === 'start') {
-    startMins = snapTo(angleToMins(a));
+    slot.startMins = snapTo(angleToMins(a));
   } else if (dragMode === 'end') {
-    endMins = snapTo(angleToMins(a));
+    slot.endMins = snapTo(angleToMins(a));
   } else if (dragMode === 'arc') {
-    // Rotate both handles by delta angle from drag start
     const delta = angleDiff(a, dragStartAngle);
     const deltaMins = (delta / TAU) * 1440;
-    startMins = snapTo(((dragStartSM + deltaMins) % 1440 + 1440) % 1440);
-    endMins   = snapTo(((dragStartEM + deltaMins) % 1440 + 1440) % 1440);
+    slot.startMins = snapTo(((dragStartSM + deltaMins) % 1440 + 1440) % 1440);
+    slot.endMins = snapTo(((dragStartEM + deltaMins) % 1440 + 1440) % 1440);
   }
 
+  saveSlots();
   render();
+  updateSlotList();
 }
 
 function onUp() {
@@ -618,6 +858,7 @@ async function loadSunTimes() {
 // ---- Init ----
 buildTicks();
 buildLabels();
+updateSlotList();
 render();
 loadSunTimes();
 setInterval(updateDaylightInfo, 60000);
