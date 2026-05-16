@@ -149,6 +149,16 @@ cursor: pointer;
 background: rgba(255,255,255,0.08);
 }
 
+.slot-button-danger {
+color: rgba(255,100,80,0.7);
+border-color: rgba(255,80,60,0.2);
+}
+.slot-button-danger.confirming {
+color: #ff6450;
+border-color: rgba(255,80,60,0.45);
+background: rgba(255,80,60,0.08);
+}
+
 .slot-summary {
 font-size: 12px;
 color: rgba(255,255,255,0.6);
@@ -160,7 +170,7 @@ max-width: 360px;
 margin: 0 auto;
 display: flex;
 flex-direction: column;
-gap: 8px;
+gap: 5px;
 padding: 0 20px;
 }
 
@@ -170,8 +180,8 @@ justify-content: space-between;
 align-items: center;
 background: rgba(255,255,255,0.03);
 border: 1px solid rgba(255,255,255,0.08);
-border-radius: 14px;
-padding: 12px 14px;
+border-radius: 10px;
+padding: 7px 12px;
 cursor: pointer;
 }
 
@@ -183,16 +193,16 @@ background: rgba(94,155,245,0.1);
 .slot-row-label {
 display: flex;
 flex-direction: column;
-gap: 4px;
+gap: 2px;
 }
 
 .slot-row-title {
-font-size: 13px;
+font-size: 12px;
 font-weight: 500;
 }
 
 .slot-row-time {
-font-size: 12px;
+font-size: 11px;
 color: rgba(255,255,255,0.65);
 font-family: ‘DM Mono’, monospace;
 }
@@ -216,6 +226,19 @@ cursor: pointer;
 border-color: rgba(255,255,255,0.18);
 }
 
+.slot-rename-input {
+background: rgba(255,255,255,0.06);
+border: 1px solid rgba(94,155,245,0.5);
+border-radius: 6px;
+color: #fff;
+font-family: 'DM Sans', sans-serif;
+font-size: 13px;
+font-weight: 500;
+padding: 2px 7px;
+outline: none;
+width: 120px;
+}
+
 .daylight-row {
 text-align: center;
 margin-top: 14px;
@@ -234,6 +257,94 @@ color: rgba(255,255,255,0.18);
 font-family: ‘DM Mono’, monospace;
 letter-spacing: 0.04em;
 margin-top: 4px;
+}
+
+.slot-row.spillover {
+border-color: rgba(255,255,255,0.05);
+background: rgba(255,255,255,0.015);
+opacity: 0.65;
+}
+
+.slot-row-spillover-tag {
+font-size: 9px;
+color: rgba(255,159,10,0.7);
+font-family: 'DM Mono', monospace;
+letter-spacing: 0.05em;
+text-transform: uppercase;
+}
+
+.day-tabs-wrap {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+margin: 14px 0 8px;
+padding: 0 20px;
+}
+
+.day-tabs {
+display: flex;
+gap: 4px;
+}
+
+.day-tab {
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.08);
+border-radius: 8px;
+color: rgba(255,255,255,0.4);
+font-family: 'DM Sans', sans-serif;
+font-size: 11px;
+font-weight: 500;
+padding: 4px 8px;
+cursor: pointer;
+letter-spacing: 0.03em;
+transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.day-tab:hover {
+background: rgba(255,255,255,0.09);
+color: rgba(255,255,255,0.7);
+}
+
+.day-tab.active {
+background: rgba(94,155,245,0.2);
+border-color: rgba(94,155,245,0.55);
+color: rgba(255,255,255,0.9);
+}
+
+.day-tab.has-slots:not(.active)::after {
+content: '';
+display: inline-block;
+width: 4px;
+height: 4px;
+border-radius: 50%;
+background: rgba(255,159,10,0.7);
+margin-left: 5px;
+vertical-align: middle;
+position: relative;
+top: -1px;
+}
+
+.day-copy-btn {
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.1);
+border-radius: 8px;
+color: rgba(255,255,255,0.4);
+font-family: 'DM Sans', sans-serif;
+font-size: 11px;
+padding: 4px 10px;
+cursor: pointer;
+transition: background 0.12s, color 0.12s;
+}
+
+.day-copy-btn:hover:not(:disabled) {
+background: rgba(255,255,255,0.09);
+color: rgba(255,255,255,0.7);
+}
+
+.day-copy-btn:disabled {
+opacity: 0.3;
+cursor: default;
 }
 </style>
 
@@ -256,7 +367,7 @@ margin-top: 4px;
 </div>
 
 <div class="dial-wrap">
-<svg id="dial" viewBox="0 0 310 310" xmlns="http://www.w3.org/2000/svg">
+<svg id="dial" viewBox="-8 -8 326 326" xmlns="http://www.w3.org/2000/svg">
 
   <!-- Background ring -->
 
@@ -282,27 +393,28 @@ margin-top: 4px;
 
 <g id="ticks"></g>
   <g id="slotArcs"></g>
+  <g id="slotLabels"></g>
 
   <!-- Hour labels -->
 
 <g id="hrLabels" text-anchor="middle" dominant-baseline="central"
-font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)"></g>
+font-family="DM Sans, sans-serif" font-size="11" fill="rgba(255,255,255,0.55)"></g>
 
   <!-- Start handle (blue) -->
 
-  <circle id="hs" r="17" fill="#1c1c1e" stroke="#5e9bf5" stroke-width="3" style="cursor:grab"/>
-  <circle id="hsDot" r="5" fill="#5e9bf5" pointer-events="none"/>
+  <circle id="hs" r="10" fill="#1c1c1e" stroke="#5e9bf5" stroke-width="2" style="cursor:grab"/>
+  <circle id="hsDot" r="3" fill="#5e9bf5" pointer-events="none"/>
 
   <!-- End handle (orange) -->
 
-  <circle id="he" r="17" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="3" style="cursor:grab"/>
-  <circle id="heDot" r="5" fill="#ff9f0a" pointer-events="none"/>
+  <circle id="he" r="10" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="2" style="cursor:grab"/>
+  <circle id="heDot" r="3" fill="#ff9f0a" pointer-events="none"/>
 
   <!-- Arc midpoint grab stick -->
 
   <line id="stickLine" stroke="#ff9f0a" stroke-width="1.5" stroke-opacity="0.45" stroke-linecap="round" pointer-events="none"/>
-  <circle id="stickHandle" r="11" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="2.5" style="cursor:grab"/>
-  <circle id="stickDot" r="3.5" fill="#ff9f0a" pointer-events="none"/>
+  <circle id="stickHandle" r="9" fill="#1c1c1e" stroke="#ff9f0a" stroke-width="2" style="cursor:grab"/>
+  <circle id="stickDot" r="3" fill="#ff9f0a" pointer-events="none"/>
 
 </svg>
 </div>
@@ -315,9 +427,23 @@ font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)">
   <div class="midnight" id="midnight">↺ crosses midnight</div>
 </div>
 
+<div class="day-tabs-wrap">
+  <div class="day-tabs" id="dayTabs">
+    <button class="day-tab" data-day="Mon" onclick="switchDay('Mon')">Mon</button>
+    <button class="day-tab" data-day="Tue" onclick="switchDay('Tue')">Tue</button>
+    <button class="day-tab" data-day="Wed" onclick="switchDay('Wed')">Wed</button>
+    <button class="day-tab" data-day="Thu" onclick="switchDay('Thu')">Thu</button>
+    <button class="day-tab" data-day="Fri" onclick="switchDay('Fri')">Fri</button>
+    <button class="day-tab" data-day="Sat" onclick="switchDay('Sat')">Sat</button>
+    <button class="day-tab" data-day="Sun" onclick="switchDay('Sun')">Sun</button>
+  </div>
+  <button class="day-copy-btn" id="dayCopyBtn" onclick="copyDayForward()">Copy →</button>
+</div>
+
 <div class="slot-toolbar">
   <button class="slot-button" id="addSlotBtn" onclick="addSlot()">+ Add slot</button>
   <div class="slot-summary" id="slotSummary">1 slot · 1 hr 30 min total</div>
+  <button class="slot-button slot-button-danger" id="deleteAllBtn" onclick="requestDeleteAll()">Clear day</button>
 </div>
 <div id="slotList" class="slot-list"></div>
 
@@ -328,7 +454,7 @@ font-family="DM Sans, sans-serif" font-size="12.5" fill="rgba(255,255,255,0.3)">
 
 <div class="hint">Drag handles to change start/end · drag the arc to shift both</div>
 
-<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v1.1</div>
+<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v2.0</div>
 
 <script>
 const CX = 155, CY = 155, R = 120;
@@ -337,8 +463,12 @@ const SNAP = 15; // minutes
 
 const STORAGE_KEY = 'durationSlots';
 const DEFAULT_SLOT_LENGTH = 120;
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-let slots = loadSlots();
+const { sched: _sched, day: _savedDay } = loadSchedule();
+let schedule = _sched;
+let currentDay = _savedDay;
+let slots = schedule[currentDay];
 let selectedSlotId = slots.length ? slots[0].id : null;
 
 // Sun times (null until geolocation resolves)
@@ -404,26 +534,38 @@ function formatDur(m) {
   return `${h} hr ${mm} min`;
 }
 
-function loadSlots() {
+function loadSchedule() {
+  const empty = () => { const s = {}; DAYS.forEach(d => { s[d] = []; }); return s; };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (Array.isArray(parsed) && parsed.length) return parsed;
+    if (parsed && parsed.schedule) {
+      const s = empty();
+      DAYS.forEach(d => { if (Array.isArray(parsed.schedule[d])) s[d] = parsed.schedule[d]; });
+      return { sched: s, day: DAYS.includes(parsed.currentDay) ? parsed.currentDay : 'Mon' };
+    }
+    // Legacy: plain array → migrate to Mon
+    if (Array.isArray(parsed) && parsed.length) {
+      const s = empty();
+      s['Mon'] = parsed;
+      return { sched: s, day: 'Mon' };
+    }
   } catch (_) {}
-  return [{ id: Date.now(), label: 'Slot 1', startMins: 9 * 60, endMins: 10 * 60 + 30 }];
+  const s = empty();
+  s['Mon'] = [{ id: Date.now(), label: 'Slot 1', startMins: 9 * 60, endMins: 10 * 60 + 30 }];
+  return { sched: s, day: 'Mon' };
 }
 
 function saveSlots() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(slots));
+  slots.sort((a, b) => a.startMins - b.startMins);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ schedule, currentDay }));
 }
 
 function getSelectedSlot() {
+  if (selectedSlotId === null) return null;
   let slot = slots.find(s => s.id === selectedSlotId);
-  if (!slot) {
-    slot = slots[0] || null;
-    selectedSlotId = slot ? slot.id : null;
-  }
-  return slot;
+  if (!slot && slots.length) { slot = slots[0]; selectedSlotId = slot.id; }
+  return slot || null;
 }
 
 function getDurationForSlot(slot) {
@@ -461,42 +603,179 @@ function selectSlot(id) {
 
 function deleteSlot(id, event) {
   event.stopPropagation();
-  if (slots.length <= 1) return;
-  slots = slots.filter(s => s.id !== id);
-  if (selectedSlotId === id) selectedSlotId = slots[0].id;
+  const idx = slots.findIndex(s => s.id === id);
+  if (idx !== -1) slots.splice(idx, 1);
+  if (selectedSlotId === id) selectedSlotId = slots[0]?.id || null;
   saveSlots();
   updateSlotList();
   render();
+}
+
+function triggerRename(titleSpan, slot) {
+  if (!titleSpan) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = slot.label;
+  input.className = 'slot-rename-input';
+  titleSpan.replaceWith(input);
+  input.focus();
+  input.select();
+  const save = () => { const v = input.value.trim(); if (v) slot.label = v; saveSlots(); updateSlotList(); };
+  input.onblur = save;
+  input.onkeydown = (ev) => { if (ev.key === 'Enter') input.blur(); if (ev.key === 'Escape') updateSlotList(); };
+}
+
+let pendingRenameId = null;
+let deleteAllConfirming = false;
+let deleteAllTimer = null;
+
+function requestDeleteAll() {
+  const btn = document.getElementById('deleteAllBtn');
+  if (deleteAllConfirming) {
+    clearTimeout(deleteAllTimer);
+    deleteAllConfirming = false;
+    slots.length = 0;
+    selectedSlotId = null;
+    saveSlots();
+    updateSlotList();
+    render();
+    btn.textContent = 'Clear day';
+    btn.classList.remove('confirming');
+  } else {
+    deleteAllConfirming = true;
+    btn.textContent = `Clear ${currentDay}?`;
+    btn.classList.add('confirming');
+    deleteAllTimer = setTimeout(() => {
+      deleteAllConfirming = false;
+      btn.textContent = 'Clear day';
+      btn.classList.remove('confirming');
+    }, 3000);
+  }
+}
+
+function switchDay(day) {
+  if (deleteAllConfirming) {
+    clearTimeout(deleteAllTimer);
+    deleteAllConfirming = false;
+    const btn = document.getElementById('deleteAllBtn');
+    btn.textContent = 'Clear day';
+    btn.classList.remove('confirming');
+  }
+  currentDay = day;
+  slots = schedule[currentDay];
+  selectedSlotId = slots.length ? slots[0].id : null;
+  saveSlots();
+  updateDayTabs();
+  updateSlotList();
+  render();
+}
+
+function copyDayForward() {
+  if (!slots.length) return;
+  const nextDay = DAYS[(DAYS.indexOf(currentDay) + 1) % DAYS.length];
+  const now = Date.now();
+  schedule[nextDay] = slots.map((s, i) => ({ ...s, id: now + i }));
+  switchDay(nextDay);
+}
+
+function updateDayTabs() {
+  DAYS.forEach(d => {
+    const btn = document.querySelector(`.day-tab[data-day="${d}"]`);
+    if (!btn) return;
+    btn.classList.toggle('active', d === currentDay);
+    btn.classList.toggle('has-slots', schedule[d].length > 0);
+  });
+  const nextDay = DAYS[(DAYS.indexOf(currentDay) + 1) % DAYS.length];
+  const copyBtn = document.getElementById('dayCopyBtn');
+  if (copyBtn) {
+    copyBtn.textContent = `Copy → ${nextDay}`;
+    copyBtn.disabled = slots.length === 0;
+  }
 }
 
 function updateSlotList() {
   const container = document.getElementById('slotList');
   const summary = document.getElementById('slotSummary');
   container.innerHTML = '';
-  slots.forEach(slot => {
+
+  const prevDay = DAYS[(DAYS.indexOf(currentDay) - 1 + DAYS.length) % DAYS.length];
+  getSpilloverSlots().forEach(slot => {
     const row = document.createElement('div');
-    row.className = `slot-row${slot.id === selectedSlotId ? ' selected' : ''}`;
-    row.onclick = () => selectSlot(slot.id);
+    row.className = 'slot-row spillover';
+    row.title = `From ${prevDay} — click to go there`;
+    row.onclick = () => switchDay(prevDay);
 
     const label = document.createElement('div');
     label.className = 'slot-row-label';
-    label.innerHTML = `<span class="slot-row-title">${slot.label}</span><span class="slot-row-time">${formatTime(slot.startMins)} – ${formatTime(slot.endMins)} · ${formatDur(getDurationForSlot(slot))}</span>`;
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'slot-row-title';
+    titleSpan.textContent = slot.label;
+
+    const tag = document.createElement('span');
+    tag.className = 'slot-row-spillover-tag';
+    tag.textContent = `← ${prevDay}`;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'slot-row-time';
+    timeSpan.textContent = `12:00 AM – ${formatTime(slot.endMins)} · ${formatDur(slot.endMins)}`;
+
+    label.appendChild(titleSpan);
+    label.appendChild(tag);
+    label.appendChild(timeSpan);
+    row.appendChild(label);
+    container.appendChild(row);
+  });
+
+  const sorted = [...slots].sort((a, b) => a.startMins - b.startMins);
+  sorted.forEach(slot => {
+    const row = document.createElement('div');
+    row.className = `slot-row${slot.id === selectedSlotId ? ' selected' : ''}`;
+    row.onclick = () => selectSlot(slot.id);
+    row.ondblclick = (e) => { e.stopPropagation(); pendingRenameId = slot.id; selectSlot(slot.id); };
+
+    const label = document.createElement('div');
+    label.className = 'slot-row-label';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'slot-row-title';
+    titleSpan.textContent = slot.label;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'slot-row-time';
+    timeSpan.textContent = `${formatTime(slot.startMins)} – ${formatTime(slot.endMins)} · ${formatDur(getDurationForSlot(slot))}`;
+
+    label.appendChild(titleSpan);
+    label.appendChild(timeSpan);
 
     const actions = document.createElement('div');
     actions.className = 'slot-row-actions';
+
+    const ren = document.createElement('button');
+    ren.className = 'slot-action';
+    ren.textContent = '✎';
+    ren.onclick = (e) => { e.stopPropagation(); triggerRename(titleSpan, slot); };
+
     const del = document.createElement('button');
     del.className = 'slot-action';
     del.textContent = 'Delete';
     del.onclick = (e) => deleteSlot(slot.id, e);
-    actions.appendChild(del);
 
+    actions.appendChild(ren);
+    actions.appendChild(del);
     row.appendChild(label);
     row.appendChild(actions);
     container.appendChild(row);
+
+    if (slot.id === pendingRenameId) {
+      pendingRenameId = null;
+      triggerRename(titleSpan, slot);
+    }
   });
 
-  const total = slots.reduce((sum, slot) => sum + getDurationForSlot(slot), 0);
+  const total = slots.reduce((sum, s) => sum + getDurationForSlot(s), 0);
   summary.textContent = `${slots.length} slot${slots.length !== 1 ? 's' : ''} · ${formatDur(total)} total`;
+  updateDayTabs();
 }
 
 function buildSlotPath(slot) {
@@ -511,23 +790,112 @@ function buildSlotPath(slot) {
   return `M ${p1.x} ${p1.y} A ${R} ${R} 0 ${largeArc} 1 ${p2.x} ${p2.y}`;
 }
 
+function getSpilloverSlots() {
+  const prevDay = DAYS[(DAYS.indexOf(currentDay) - 1 + DAYS.length) % DAYS.length];
+  return schedule[prevDay].filter(s => s.endMins < s.startMins);
+}
+
 function drawSlotArcs() {
   const g = document.getElementById('slotArcs');
   g.innerHTML = '';
+
+  // Spillover arcs from previous day (non-interactive, muted)
+  getSpilloverSlots().forEach(slot => {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', buildSlotPath({ startMins: 0, endMins: slot.endMins }));
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'rgba(255,159,10,0.18)');
+    path.setAttribute('stroke-width', '30');
+    path.setAttribute('stroke-linecap', 'butt');
+    path.setAttribute('pointer-events', 'none');
+    g.appendChild(path);
+  });
+
+  // Current day unselected arcs
   slots.forEach(slot => {
     if (slot.id === selectedSlotId) return;
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', buildSlotPath(slot));
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+    path.setAttribute('stroke', 'rgba(255,159,10,0.32)');
     path.setAttribute('stroke-width', '30');
     path.setAttribute('stroke-linecap', 'butt');
     path.setAttribute('cursor', 'pointer');
     path.setAttribute('pointer-events', 'stroke');
     path.onclick = () => selectSlot(slot.id);
-    path.onmouseover = () => path.setAttribute('stroke', 'rgba(255,255,255,0.24)');
-    path.onmouseout = () => path.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+    path.onmouseover = () => path.setAttribute('stroke', 'rgba(255,159,10,0.55)');
+    path.onmouseout = () => path.setAttribute('stroke', 'rgba(255,159,10,0.32)');
     g.appendChild(path);
+  });
+
+  // Boundary ticks — current day slots + spillover boundaries
+  const tickInner = 101;
+  const tickOuter = 139;
+  const drawn = new Set();
+  const addTick = (mins) => {
+    const key = ((mins % 1440) + 1440) % 1440;
+    if (drawn.has(key)) return;
+    drawn.add(key);
+    const a = minsToAngle(key);
+    const p1 = polar(a, tickInner);
+    const p2 = polar(a, tickOuter);
+    const tick = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    tick.setAttribute('x1', p1.x); tick.setAttribute('y1', p1.y);
+    tick.setAttribute('x2', p2.x); tick.setAttribute('y2', p2.y);
+    tick.setAttribute('stroke', 'rgba(255,255,255,0.6)');
+    tick.setAttribute('stroke-width', '2');
+    tick.setAttribute('stroke-linecap', 'square');
+    tick.setAttribute('pointer-events', 'none');
+    g.appendChild(tick);
+  };
+  slots.forEach(slot => {
+    addTick(slot.startMins);
+    addTick((slot.startMins + getDurationForSlot(slot)) % 1440);
+  });
+  getSpilloverSlots().forEach(slot => {
+    addTick(0);
+    addTick(slot.endMins);
+  });
+}
+
+function drawSlotLabels() {
+  const g = document.getElementById('slotLabels');
+  g.innerHTML = '';
+
+  const addLabel = (label, midMins, fill) => {
+    const aMid = minsToAngle(midMins);
+    const p = polar(aMid, 103);
+    const aMidDeg = aMid * 180 / Math.PI;
+    const rightHalf = Math.cos(aMid) >= 0;
+    const rot    = rightHalf ? aMidDeg : aMidDeg + 180;
+    const anchor = rightHalf ? 'end'   : 'start';
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', p.x);
+    txt.setAttribute('y', p.y);
+    txt.setAttribute('text-anchor', anchor);
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.setAttribute('font-family', 'DM Sans, sans-serif');
+    txt.setAttribute('font-size', '7.5');
+    txt.setAttribute('font-weight', '600');
+    txt.setAttribute('fill', fill);
+    txt.setAttribute('letter-spacing', '0.08em');
+    txt.setAttribute('transform', `rotate(${rot}, ${p.x}, ${p.y})`);
+    txt.setAttribute('pointer-events', 'none');
+    txt.textContent = label.toUpperCase();
+    g.appendChild(txt);
+  };
+
+  slots.forEach(slot => {
+    const dur = getDurationForSlot(slot);
+    if (dur < 45) return;
+    const midMins = ((slot.startMins + dur / 2) % 1440 + 1440) % 1440;
+    const isSelected = slot.id === selectedSlotId;
+    addLabel(slot.label, midMins, isSelected ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.28)');
+  });
+
+  getSpilloverSlots().forEach(slot => {
+    if (slot.endMins < 45) return;
+    addLabel(slot.label, slot.endMins / 2, 'rgba(255,255,255,0.18)');
   });
 }
 
@@ -557,7 +925,7 @@ function buildLabels() {
     ['12PM', Math.PI / 2],
     ['6PM',  Math.PI],
   ].forEach(([txt, a]) => {
-    const p = polar(a, R - 42);
+    const p = polar(a, 147);
     const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     t.setAttribute('x', p.x); t.setAttribute('y', p.y);
     t.textContent = txt;
@@ -567,8 +935,28 @@ function buildLabels() {
 
 // ---- Render ----
 function render() {
+  drawSlotArcs();
+  drawSlotLabels();
+
   const slot = getSelectedSlot();
-  if (!slot) return;
+  if (!slot) {
+    document.getElementById('lblStart2').textContent = '—';
+    document.getElementById('lblEnd2').textContent   = '—';
+    document.getElementById('durMain').textContent   = '—';
+    document.getElementById('durSub').textContent    = '';
+    document.getElementById('midnight').classList.remove('show');
+    document.getElementById('arcFill').setAttribute('d', '');
+    document.getElementById('arcHit').setAttribute('d', '');
+    const off = -500;
+    ['hs','hsDot','he','heDot','stickHandle','stickDot'].forEach(id => {
+      document.getElementById(id).setAttribute('cx', off);
+      document.getElementById(id).setAttribute('cy', off);
+    });
+    const sl = document.getElementById('stickLine');
+    sl.setAttribute('x1', off); sl.setAttribute('y1', off);
+    sl.setAttribute('x2', off); sl.setAttribute('y2', off);
+    return;
+  }
 
   const sm = slot.startMins;
   const em = slot.endMins;
@@ -580,8 +968,6 @@ function render() {
   document.getElementById('durMain').textContent  = formatDur(dur);
   document.getElementById('durSub').textContent   = `${dur} minute${dur !== 1 ? 's' : ''} total`;
   document.getElementById('midnight').classList.toggle('show', crossesMidnight);
-
-  drawSlotArcs();
 
   const aS = minsToAngle(sm);
   const aE = minsToAngle(em);
@@ -711,10 +1097,17 @@ function determineTarget(e) {
 }
 
 // ---- Drag handlers ----
+let pointerDownNoTarget = false;
+
 function onDown(e) {
   e.preventDefault();
   const target = determineTarget(e);
-  if (!target) return;
+  if (!target) {
+    const _r = getEventRadius(e);
+    pointerDownNoTarget = _r < R - 20 || _r > R + 16;
+    return;
+  }
+  pointerDownNoTarget = false;
 
   const slot = getSelectedSlot();
   if (!slot) return;
@@ -759,6 +1152,14 @@ function onMove(e) {
 }
 
 function onUp() {
+  if (pointerDownNoTarget) {
+    pointerDownNoTarget = false;
+    selectedSlotId = null;
+    updateSlotList();
+    render();
+    return;
+  }
+  pointerDownNoTarget = false;
   dragMode = null;
   document.getElementById('arcHit').style.cursor = 'grab';
   document.getElementById('hs').style.cursor = 'grab';
@@ -768,6 +1169,7 @@ function onUp() {
 
 svg.addEventListener('mousedown', onDown);
 svg.addEventListener('touchstart', onDown, { passive: false });
+
 window.addEventListener('mousemove', onMove);
 window.addEventListener('touchmove', onMove, { passive: false });
 window.addEventListener('mouseup', onUp);
