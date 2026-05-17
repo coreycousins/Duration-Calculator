@@ -259,6 +259,218 @@ letter-spacing: 0.04em;
 margin-top: 4px;
 }
 
+/* ---- Schedule bar & panel ---- */
+.schedule-bar {
+display: flex;
+align-items: center;
+justify-content: space-between;
+max-width: 360px;
+margin: 14px auto 0;
+padding: 0 20px;
+}
+
+.schedule-name {
+font-size: 13px;
+font-weight: 500;
+color: rgba(255,255,255,0.75);
+cursor: text;
+}
+
+.schedule-name-input {
+background: transparent;
+border: none;
+border-bottom: 1px solid rgba(255,255,255,0.3);
+color: rgba(255,255,255,0.85);
+font-family: 'DM Sans', sans-serif;
+font-size: 13px;
+font-weight: 500;
+outline: none;
+width: 160px;
+}
+
+.schedule-toggle-btn {
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.1);
+border-radius: 8px;
+color: rgba(255,255,255,0.45);
+font-family: 'DM Sans', sans-serif;
+font-size: 11px;
+padding: 4px 10px;
+cursor: pointer;
+transition: background 0.12s, color 0.12s;
+}
+
+.schedule-toggle-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75); }
+.schedule-toggle-btn.active { background: rgba(94,155,245,0.15); border-color: rgba(94,155,245,0.4); color: rgba(255,255,255,0.9); }
+
+/* Inline panel */
+.schedule-panel {
+max-width: 360px;
+margin: 8px auto 0;
+padding: 0 20px;
+overflow: hidden;
+max-height: 0;
+transition: max-height 0.25s ease;
+}
+
+.schedule-panel.open { max-height: 600px; }
+
+.schedule-panel-inner {
+background: rgba(255,255,255,0.03);
+border: 1px solid rgba(255,255,255,0.08);
+border-radius: 12px;
+overflow: hidden;
+}
+
+.schedule-panel-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 9px 14px 7px;
+border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.schedule-panel-title {
+font-size: 10px;
+font-weight: 600;
+color: rgba(255,255,255,0.35);
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+
+.schedule-panel-header-actions { display: flex; gap: 4px; }
+
+.schedule-panel-meta-btn {
+background: none;
+border: 1px solid rgba(255,255,255,0.08);
+border-radius: 6px;
+color: rgba(255,255,255,0.3);
+font-family: 'DM Sans', sans-serif;
+font-size: 10px;
+padding: 2px 8px;
+cursor: pointer;
+}
+
+.schedule-panel-meta-btn:hover { color: rgba(255,255,255,0.65); background: rgba(255,255,255,0.05); }
+
+.schedule-entry {
+display: flex;
+align-items: center;
+padding: 8px 14px;
+gap: 8px;
+cursor: pointer;
+border-bottom: 1px solid rgba(255,255,255,0.04);
+transition: background 0.1s;
+}
+
+.schedule-entry:last-child { border-bottom: none; }
+.schedule-entry:hover { background: rgba(255,255,255,0.04); }
+.schedule-entry.active-entry { background: rgba(94,155,245,0.08); }
+
+.schedule-entry-info { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.schedule-entry-name {
+font-size: 12px;
+font-weight: 500;
+color: rgba(255,255,255,0.7);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+
+.schedule-entry.active-entry .schedule-entry-name { color: rgba(255,255,255,0.95); }
+
+.schedule-entry-date {
+font-size: 9px;
+color: rgba(255,255,255,0.2);
+font-family: 'DM Mono', monospace;
+}
+
+.schedule-entry-name-input {
+background: transparent;
+border: none;
+border-bottom: 1px solid rgba(255,255,255,0.3);
+color: rgba(255,255,255,0.85);
+font-family: 'DM Sans', sans-serif;
+font-size: 12px;
+font-weight: 500;
+outline: none;
+width: 130px;
+}
+
+.schedule-entry-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+.schedule-entry-btn {
+background: none;
+border: 1px solid rgba(255,255,255,0.08);
+border-radius: 6px;
+color: rgba(255,255,255,0.35);
+font-size: 10px;
+padding: 2px 7px;
+cursor: pointer;
+}
+
+.schedule-entry-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
+.schedule-entry-btn:disabled { opacity: 0.25; cursor: default; }
+.schedule-entry-btn.danger { border-color: rgba(255,69,58,0.25); color: rgba(255,69,58,0.5); }
+.schedule-entry-btn.danger:hover:not(:disabled) { background: rgba(255,69,58,0.1); color: rgba(255,69,58,0.9); }
+
+.schedule-panel-footer {
+display: flex;
+gap: 8px;
+padding: 9px 14px;
+border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.schedule-footer-btn {
+background: rgba(255,255,255,0.05);
+border: 1px solid rgba(255,255,255,0.1);
+border-radius: 8px;
+color: rgba(255,255,255,0.45);
+font-family: 'DM Sans', sans-serif;
+font-size: 11px;
+padding: 4px 12px;
+cursor: pointer;
+transition: background 0.12s, color 0.12s;
+}
+
+.schedule-footer-btn:hover { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.8); }
+
+/* Drawer mode overrides */
+body.drawer-mode .schedule-panel {
+position: fixed;
+top: 0; right: 0; bottom: 0;
+width: 280px;
+max-width: 88vw;
+max-height: none !important;
+padding: 0;
+margin: 0;
+transform: translateX(110%);
+transition: transform 0.25s ease;
+z-index: 200;
+overflow-y: auto;
+}
+
+body.drawer-mode .schedule-panel.open { transform: translateX(0); max-height: none !important; }
+
+body.drawer-mode .schedule-panel-inner {
+border-radius: 0;
+border: none;
+border-left: 1px solid rgba(255,255,255,0.1);
+min-height: 100%;
+background: #161618;
+}
+
+.schedule-backdrop {
+display: none;
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.5);
+z-index: 199;
+}
+
+.schedule-backdrop.visible { display: block; }
+
 .slot-row.spillover {
 border-color: rgba(255,255,255,0.05);
 background: rgba(255,255,255,0.015);
@@ -427,6 +639,31 @@ font-family="DM Sans, sans-serif" font-size="11" fill="rgba(255,255,255,0.55)"><
   <div class="midnight" id="midnight">↺ crosses midnight</div>
 </div>
 
+<div class="schedule-bar">
+  <span id="scheduleNameDisplay" class="schedule-name" ondblclick="renameActiveSchedule()">My Schedule</span>
+  <button class="schedule-toggle-btn" id="schedulesBtn" onclick="toggleSchedulePanel()">Schedules ▾</button>
+</div>
+
+<div class="schedule-panel" id="schedulePanel">
+  <div class="schedule-panel-inner">
+    <div class="schedule-panel-header">
+      <span class="schedule-panel-title">Saved Schedules</span>
+      <div class="schedule-panel-header-actions">
+        <button class="schedule-panel-meta-btn" id="panelModeBtn" onclick="togglePanelMode()">→ Drawer</button>
+        <button class="schedule-panel-meta-btn" onclick="closeSchedulePanel()">✕</button>
+      </div>
+    </div>
+    <div id="schedulePanelList"></div>
+    <div class="schedule-panel-footer">
+      <button class="schedule-footer-btn" onclick="newSchedule()">+ New</button>
+      <label class="schedule-footer-btn" style="cursor:pointer;">
+        Import…
+        <input type="file" accept=".json" onchange="importScheduleFile(this)" style="display:none">
+      </label>
+    </div>
+  </div>
+</div>
+
 <div class="day-tabs-wrap">
   <div class="day-tabs" id="dayTabs">
     <button class="day-tab" data-day="Mon" onclick="switchDay('Mon')">Mon</button>
@@ -454,20 +691,26 @@ font-family="DM Sans, sans-serif" font-size="11" fill="rgba(255,255,255,0.55)"><
 
 <div class="hint">Drag handles to change start/end · drag the arc to shift both</div>
 
-<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v2.0</div>
+<div style="margin-top:14px;font-size:10px;color:rgba(255,255,255,0.15);font-family:'DM Mono',monospace;letter-spacing:0.06em;">v2.1</div>
 
 <script>
 const CX = 155, CY = 155, R = 120;
 const TAU = Math.PI * 2;
 const SNAP = 15; // minutes
 
-const STORAGE_KEY = 'durationSlots';
+const SCHEDULES_KEY = 'durationSchedules';
 const DEFAULT_SLOT_LENGTH = 120;
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const { sched: _sched, day: _savedDay } = loadSchedule();
-let schedule = _sched;
-let currentDay = _savedDay;
+const _data = loadAllSchedules();
+let scheduleList = _data.schedules;
+let activeScheduleId = _data.active;
+let panelMode = _data.panelMode || 'inline';
+let schedulePanelOpen = false;
+
+const _activeEntry = scheduleList.find(s => s.id === activeScheduleId) || scheduleList[0];
+let schedule = _activeEntry.schedule;
+let currentDay = _activeEntry.currentDay || 'Mon';
 let slots = schedule[currentDay];
 let selectedSlotId = slots.length ? slots[0].id : null;
 
@@ -534,31 +777,58 @@ function formatDur(m) {
   return `${h} hr ${mm} min`;
 }
 
-function loadSchedule() {
-  const empty = () => { const s = {}; DAYS.forEach(d => { s[d] = []; }); return s; };
+function loadAllSchedules() {
+  const emptyDays = () => { const s = {}; DAYS.forEach(d => { s[d] = []; }); return s; };
+  const makeEntry = (name, sched, day) => ({
+    id: String(Date.now() + Math.floor(Math.random() * 1000)),
+    name, modified: new Date().toISOString(), currentDay: day || 'Mon', schedule: sched
+  });
+  const ensureDays = (sched) => { DAYS.forEach(d => { if (!Array.isArray(sched[d])) sched[d] = []; }); return sched; };
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    if (parsed && parsed.schedule) {
-      const s = empty();
-      DAYS.forEach(d => { if (Array.isArray(parsed.schedule[d])) s[d] = parsed.schedule[d]; });
-      return { sched: s, day: DAYS.includes(parsed.currentDay) ? parsed.currentDay : 'Mon' };
-    }
-    // Legacy: plain array → migrate to Mon
-    if (Array.isArray(parsed) && parsed.length) {
-      const s = empty();
-      s['Mon'] = parsed;
-      return { sched: s, day: 'Mon' };
+    const raw = localStorage.getItem(SCHEDULES_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.schedules) && data.schedules.length) {
+        data.schedules.forEach(e => ensureDays(e.schedule));
+        return { schedules: data.schedules, active: data.active || data.schedules[0].id, panelMode: data.panelMode || 'inline' };
+      }
     }
   } catch (_) {}
-  const s = empty();
-  s['Mon'] = [{ id: Date.now(), label: 'Slot 1', startMins: 9 * 60, endMins: 10 * 60 + 30 }];
-  return { sched: s, day: 'Mon' };
+
+  // Migrate from old single-schedule key
+  try {
+    const raw = localStorage.getItem('durationSlots');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const days = emptyDays();
+      let day = 'Mon';
+      if (parsed && parsed.schedule) {
+        DAYS.forEach(d => { if (Array.isArray(parsed.schedule[d])) days[d] = parsed.schedule[d]; });
+        day = parsed.currentDay || 'Mon';
+      } else if (Array.isArray(parsed) && parsed.length) {
+        days['Mon'] = parsed;
+      }
+      const entry = makeEntry('My Schedule', days, day);
+      return { schedules: [entry], active: entry.id, panelMode: 'inline' };
+    }
+  } catch (_) {}
+
+  const days = emptyDays();
+  days['Mon'] = [{ id: Date.now(), label: 'Slot 1', startMins: 9 * 60, endMins: 10 * 60 + 30 }];
+  const entry = makeEntry('My Schedule', days, 'Mon');
+  return { schedules: [entry], active: entry.id, panelMode: 'inline' };
+}
+
+function saveAllSchedules() {
+  localStorage.setItem(SCHEDULES_KEY, JSON.stringify({ schedules: scheduleList, active: activeScheduleId, panelMode }));
 }
 
 function saveSlots() {
   slots.sort((a, b) => a.startMins - b.startMins);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ schedule, currentDay }));
+  const active = scheduleList.find(s => s.id === activeScheduleId);
+  if (active) active.modified = new Date().toISOString();
+  saveAllSchedules();
 }
 
 function getSelectedSlot() {
@@ -664,7 +934,9 @@ function switchDay(day) {
   currentDay = day;
   slots = schedule[currentDay];
   selectedSlotId = slots.length ? slots[0].id : null;
-  saveSlots();
+  const _ae = scheduleList.find(s => s.id === activeScheduleId);
+  if (_ae) _ae.currentDay = day;
+  saveAllSchedules();
   updateDayTabs();
   updateSlotList();
   render();
@@ -691,6 +963,219 @@ function updateDayTabs() {
     copyBtn.textContent = `Copy → ${nextDay}`;
     copyBtn.disabled = slots.length === 0;
   }
+}
+
+// ---- Schedule management ----
+
+function deduplicateName(name) {
+  const existing = new Set(scheduleList.map(s => s.name));
+  if (!existing.has(name)) return name;
+  let n = 2;
+  while (existing.has(`${name} (${n})`)) n++;
+  return `${name} (${n})`;
+}
+
+function switchSchedule(id) {
+  const entry = scheduleList.find(s => s.id === id);
+  if (!entry) return;
+  activeScheduleId = id;
+  schedule = entry.schedule;
+  currentDay = entry.currentDay || 'Mon';
+  slots = schedule[currentDay];
+  selectedSlotId = slots.length ? slots[0].id : null;
+  saveAllSchedules();
+  closeSchedulePanel();
+  updateScheduleBar();
+  updateDayTabs();
+  updateSlotList();
+  render();
+}
+
+function newSchedule() {
+  const emptyDays = () => { const s = {}; DAYS.forEach(d => { s[d] = []; }); return s; };
+  const entry = {
+    id: String(Date.now()),
+    name: deduplicateName('New Schedule'),
+    modified: new Date().toISOString(),
+    currentDay: 'Mon',
+    schedule: emptyDays()
+  };
+  scheduleList.push(entry);
+  switchSchedule(entry.id);
+}
+
+function deleteScheduleEntry(id) {
+  if (scheduleList.length <= 1) return;
+  const idx = scheduleList.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  scheduleList.splice(idx, 1);
+  if (activeScheduleId === id) {
+    const next = scheduleList[Math.max(0, idx - 1)];
+    switchSchedule(next.id);
+  } else {
+    saveAllSchedules();
+    updateSchedulePanel();
+  }
+}
+
+function exportSchedule(id) {
+  const entry = scheduleList.find(s => s.id === id);
+  if (!entry) return;
+  const data = { format: 'duration-calculator', version: '1', name: entry.name, exported: new Date().toISOString().slice(0, 10), schedule: entry.schedule };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${entry.name.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importScheduleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.format !== 'duration-calculator' || !data.schedule) { alert('Not a valid Duration Calculator schedule file.'); return; }
+      const emptyDays = () => { const s = {}; DAYS.forEach(d => { s[d] = []; }); return s; };
+      const days = emptyDays();
+      DAYS.forEach(d => { if (Array.isArray(data.schedule[d])) days[d] = data.schedule[d]; });
+      const entry = { id: String(Date.now()), name: deduplicateName(data.name || 'Imported Schedule'), modified: new Date().toISOString(), currentDay: 'Mon', schedule: days };
+      scheduleList.push(entry);
+      switchSchedule(entry.id);
+    } catch (_) { alert('Could not read the schedule file.'); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+function toggleSchedulePanel() {
+  schedulePanelOpen = !schedulePanelOpen;
+  document.getElementById('schedulePanel').classList.toggle('open', schedulePanelOpen);
+  document.getElementById('scheduleBackdrop').classList.toggle('visible', schedulePanelOpen && panelMode === 'drawer');
+  document.getElementById('schedulesBtn').classList.toggle('active', schedulePanelOpen);
+  if (schedulePanelOpen) updateSchedulePanel();
+}
+
+function closeSchedulePanel() {
+  schedulePanelOpen = false;
+  document.getElementById('schedulePanel')?.classList.remove('open');
+  document.getElementById('scheduleBackdrop')?.classList.remove('visible');
+  document.getElementById('schedulesBtn')?.classList.remove('active');
+}
+
+function togglePanelMode() {
+  panelMode = panelMode === 'inline' ? 'drawer' : 'inline';
+  if (panelMode === 'drawer') document.body.classList.add('drawer-mode');
+  else document.body.classList.remove('drawer-mode');
+  document.getElementById('scheduleBackdrop').classList.toggle('visible', schedulePanelOpen && panelMode === 'drawer');
+  document.getElementById('panelModeBtn').textContent = panelMode === 'inline' ? '→ Drawer' : '← Inline';
+  saveAllSchedules();
+}
+
+function updateScheduleBar() {
+  const entry = scheduleList.find(s => s.id === activeScheduleId);
+  const el = document.getElementById('scheduleNameDisplay');
+  if (el && entry) el.textContent = entry.name;
+  if (panelMode === 'drawer') document.body.classList.add('drawer-mode');
+  else document.body.classList.remove('drawer-mode');
+}
+
+function renameActiveSchedule() {
+  const nameEl = document.getElementById('scheduleNameDisplay');
+  if (!nameEl) return;
+  const entry = scheduleList.find(s => s.id === activeScheduleId);
+  if (!entry) return;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = entry.name;
+  input.className = 'schedule-name-input';
+  nameEl.replaceWith(input);
+  input.focus(); input.select();
+  const save = () => {
+    const v = input.value.trim();
+    if (v) entry.name = v;
+    saveAllSchedules();
+    const newEl = document.createElement('span');
+    newEl.id = 'scheduleNameDisplay'; newEl.className = 'schedule-name';
+    newEl.textContent = entry.name; newEl.ondblclick = renameActiveSchedule;
+    input.replaceWith(newEl);
+  };
+  input.onblur = save;
+  input.onkeydown = (ev) => {
+    if (ev.key === 'Enter') input.blur();
+    if (ev.key === 'Escape') { input.value = entry.name; input.blur(); }
+  };
+}
+
+function updateSchedulePanel() {
+  const list = document.getElementById('schedulePanelList');
+  if (!list) return;
+  list.innerHTML = '';
+  scheduleList.forEach(entry => {
+    const row = document.createElement('div');
+    row.className = `schedule-entry${entry.id === activeScheduleId ? ' active-entry' : ''}`;
+    row.onclick = () => { if (entry.id !== activeScheduleId) switchSchedule(entry.id); };
+
+    const info = document.createElement('div');
+    info.className = 'schedule-entry-info';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'schedule-entry-name';
+    nameEl.textContent = entry.name;
+    const dateEl = document.createElement('span');
+    dateEl.className = 'schedule-entry-date';
+    dateEl.textContent = entry.modified ? entry.modified.slice(0, 10) : '';
+    info.appendChild(nameEl); info.appendChild(dateEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'schedule-entry-actions';
+
+    const renBtn = document.createElement('button');
+    renBtn.className = 'schedule-entry-btn'; renBtn.textContent = '✎'; renBtn.title = 'Rename';
+    renBtn.onclick = (e) => {
+      e.stopPropagation();
+      const input = document.createElement('input');
+      input.type = 'text'; input.value = entry.name; input.className = 'schedule-entry-name-input';
+      nameEl.replaceWith(input); input.focus(); input.select();
+      const save = () => {
+        const v = input.value.trim(); if (v) entry.name = v;
+        nameEl.textContent = entry.name; input.replaceWith(nameEl);
+        saveAllSchedules();
+        if (entry.id === activeScheduleId) updateScheduleBar();
+      };
+      input.onblur = save;
+      input.onkeydown = (ev) => { if (ev.key === 'Enter') input.blur(); if (ev.key === 'Escape') { input.value = entry.name; input.blur(); } };
+    };
+
+    const expBtn = document.createElement('button');
+    expBtn.className = 'schedule-entry-btn'; expBtn.textContent = '↓'; expBtn.title = 'Export';
+    expBtn.onclick = (e) => { e.stopPropagation(); exportSchedule(entry.id); };
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'schedule-entry-btn danger'; delBtn.textContent = '✕'; delBtn.title = 'Delete';
+    delBtn.disabled = scheduleList.length <= 1;
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (scheduleList.length <= 1) return;
+      if (delBtn.dataset.confirming) {
+        clearTimeout(Number(delBtn.dataset.timer));
+        deleteScheduleEntry(entry.id);
+      } else {
+        delBtn.dataset.confirming = '1'; delBtn.textContent = '?';
+        delBtn.dataset.timer = setTimeout(() => { delete delBtn.dataset.confirming; delBtn.textContent = '✕'; }, 2000);
+      }
+    };
+
+    actions.appendChild(renBtn); actions.appendChild(expBtn); actions.appendChild(delBtn);
+    row.appendChild(info); row.appendChild(actions);
+    list.appendChild(row);
+  });
+  const modeBtn = document.getElementById('panelModeBtn');
+  if (modeBtn) modeBtn.textContent = panelMode === 'inline' ? '→ Drawer' : '← Inline';
 }
 
 function updateSlotList() {
@@ -1260,11 +1745,14 @@ async function loadSunTimes() {
 // ---- Init ----
 buildTicks();
 buildLabels();
+updateScheduleBar();
 updateSlotList();
 render();
 loadSunTimes();
 setInterval(updateDaylightInfo, 60000);
 </script>
+
+<div class="schedule-backdrop" id="scheduleBackdrop" onclick="closeSchedulePanel()"></div>
 
 </body>
 </html>
